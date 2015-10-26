@@ -1,37 +1,48 @@
 require 'helpers'
+require 'tempfile'
 
 describe 'settings' do
 
   it 'allows RAML file to be set' do
 
     mock_app {
-      set :raml, 'api.raml'
+      file = Tempfile.new('foo')
+      file.write(%q(#%RAML 0.8
+                    title: Ramly API
+                    baseUri: http://ramly.io
+                    version: v1
+                    /foo:
+                      delete:
+              ))
+      file.close
 
-      send 'get', '/hello' do
-        'Hello World'
-      end
+      set :raml, file.path
+      delete('/foo') {}
     }
+
+    delete '/foo'
+    expect(last_response.ok?).to eq(true)
 
   end
 
-  it 'allows RAML content to be set' do
+  it 'allows RAML to be set inline' do
 
     mock_app {
-      raml = %q(#%RAML 0.8
-              title: World Music API
-              baseUri: http://example.api.com/{version}
-              version: v1
-              /hello:
-                delete:
+      raml = %q(
+                #%RAML 0.8
+                title: Ramly API
+                baseUri: http://ramly.io
+                version: v1
+                /hello:
+                  delete:
               )
 
       set :raml, raml
-
-      send 'get', '/hello' do
-        'Hello World'
-      end
+      delete('/hello') {}
     }
 
+    delete '/hello'
+    expect(last_response.ok?).to eq(true)
   end
 
 end

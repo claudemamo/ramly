@@ -16,7 +16,6 @@ describe Ramly do
   }
   subject { puts 'sd' }
 
-
   %w[get put post delete].each do |method|
     it "should give a 200 HTTP status code for a #{method.upcase} resource" do
       mock_app {
