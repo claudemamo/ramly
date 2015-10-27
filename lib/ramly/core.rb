@@ -31,6 +31,11 @@ module Ramly
       @response.finish
     end
 
+    def isMatch?(url, route)
+      url.split('/') |""
+
+    end
+
     class << self
       attr_accessor :routes, :run, :environment
 

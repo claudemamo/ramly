@@ -3,21 +3,28 @@ require 'tempfile'
 
 describe 'settings' do
 
+  def settings_app(&block)
+    mock_app {
+      @raml = %q(#%RAML 0.8
+                 title: Ramly API
+                 baseUri: http://ramly.io
+                 version: v1
+                 /foo:
+                   delete:
+                )
+      instance_eval(&block)
+      delete('/foo') {}
+    }
+  end
+
   it 'allows RAML file to be set' do
 
-    mock_app {
+    settings_app {
       file = Tempfile.new('foo')
-      file.write(%q(#%RAML 0.8
-                    title: Ramly API
-                    baseUri: http://ramly.io
-                    version: v1
-                    /foo:
-                      delete:
-              ))
+      file.write(@raml)
       file.close
 
       set :raml, file.path
-      delete('/foo') {}
     }
 
     delete '/foo'
@@ -27,21 +34,11 @@ describe 'settings' do
 
   it 'allows RAML to be set inline' do
 
-    mock_app {
-      raml = %q(
-                #%RAML 0.8
-                title: Ramly API
-                baseUri: http://ramly.io
-                version: v1
-                /hello:
-                  delete:
-              )
-
-      set :raml, raml
-      delete('/hello') {}
+    settings_app {
+      set :raml, @raml
     }
 
-    delete '/hello'
+    delete '/foo'
     expect(last_response.ok?).to eq(true)
   end
 
