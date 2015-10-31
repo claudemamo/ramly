@@ -2,5 +2,5 @@ language: ruby
 rvm:
   - 2.2.2
 before_install:
-   - ( git clone https://github.com/claudemamo/raml_ruby.git /tmp/raml_ruby && cd /tmp/raml_ruby && gem build raml_ruby.gemspec && gem install --local pkg/raml_ruby-0.1.1.gem  )
+   - ( git clone https://github.com/claudemamo/raml_ruby.git /tmp/raml_ruby && cd /tmp/raml_ruby && gem build raml_ruby.gemspec && gem install --local raml_ruby-0.1.1.gem  )
 script: rspec spec
