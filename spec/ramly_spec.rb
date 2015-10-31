@@ -14,13 +14,13 @@ describe Ramly do
                   put:
                   delete:
                )
-      set  :raml, raml
+      set :raml, raml
       instance_eval(&block)
     }
   end
 
   %w[get put post delete].each do |method|
-    it "should give a 200 HTTP status code for a #{method.upcase} resource" do
+    it "should give a 200 HTTP status code for a #{method.upcase} request to a resource" do
       ramly_app {
         send method, '/hello' do
           'Hello World'
@@ -35,26 +35,30 @@ describe Ramly do
 
   end
 
-  it 'should allow declared named URI parameters' do
+  it 'should give a 200 HTTP status code for a request having a declared named URI parameter' do
     mock_app {
+      include ::RSpec::Matchers
+
       raml = %q(#%RAML 0.8
                 title: World Music API
                 baseUri: http://example.api.com/{version}
                 version: v1
-                /hello/{name}:
+                /hello/{name}/{surname}:
                   get:
                )
-      set  :raml, raml
-      get('/hello/{name}') { }
+      set :raml, raml
+      get('/hello/{name}/{surname}') {
+        expect(@params.size).to eq(2)
+        expect(@params[:name]).to eq('foo')
+        expect(@params[:surname]).to eq('bar')
+      }
     }
 
-    get '/hello/foo'
-    expect(last_response.ok?).to eq(true)
     get '/hello/foo/bar'
-    expect(last_response.forbidden?).to eq(true)
+    expect(last_response.ok?).to eq(true)
   end
 
-  it 'should forbid undeclared named URI parameters' do
+  it 'should give a HTTP 403 status code for a request having an undeclared named URI parameter' do
     mock_app {
       raml = %q(#%RAML 0.8
                 title: World Music API
@@ -65,8 +69,8 @@ describe Ramly do
                 /bye:
                   get:
                )
-      set  :raml, raml
-      get('/hello/{name}') { }
+      set :raml, raml
+      get('/hello/{name}') {}
     }
 
     get '/hello/foo/bar'
@@ -75,12 +79,20 @@ describe Ramly do
     expect(last_response.forbidden?).to eq(true)
   end
 
-  it 'should give a HTTP 403 status code for an undeclared resource' do
+  it 'should give a HTTP 403 status code for request to an undeclared resource' do
     ramly_app {
       get('/hello') {}
     }
     get '/foo'
     expect(last_response.forbidden?).to eq(true)
     expect(last_response.body).to eq('')
+  end
+
+  it 'should fail to start for an undeclared resource' do
+    expect {
+      ramly_app {
+        get('/bye') {}
+      }
+    }.to raise_error(Ramly::ImplementedUnknownResource, 'Implemented unknown resource for GET: /bye')
   end
 end

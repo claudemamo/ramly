@@ -1,4 +1,5 @@
 require './lib/ramly/route_builder'
+require './lib/ramly/exceptions'
 
 module Ramly
 
@@ -20,20 +21,18 @@ module Ramly
       @params = @request.params
 
       @response = Rack::Response.new
-      if (self.class.routes.has_key?(@request.path_info) && self.class.routes[@request.path_info].has_key?(@request.request_method))
-        block = self.class.routes[@request.path_info][@request.request_method]
-        @response.write instance_eval(&block)
+
+      route = self.class.routes[@request.path_info]
+      if (route && route[@request.request_method])
+        uri_named_params = route.to_params(@request.path_info)
+        @params = @params.merge uri_named_params
+        @response.write instance_eval(&route[@request.request_method])
         @response.status = 200
       else
         @response.status = 403
       end
 
       @response.finish
-    end
-
-    def isMatch?(url, route)
-      url.split('/') |""
-
     end
 
     class << self

@@ -1,55 +1,56 @@
 module Ramly
 
   module RouteBuilder
-    #
-    # class Methods
-    #
-    #   attr_accessor :method, :block
-    #
-    #   def []=(key, value)
-    #     @method = key
-    #     @block = value
-    #   end
-    #
-    # end
 
     class Route
 
-      attr_accessor :uri, :pattern
+      attr_accessor :uri, :pattern, :methods
 
       def initialize(uri)
+        @methods = {}
         @uri = uri
-        @pattern = Regexp.new(@uri.gsub(/\/{[\w]+}/, '\/[\w]+$'))
-        # puts @pattern
+        uri_named_params_pattern = @uri.gsub(/\/{([\w]+)}/) {
+          "/(?<#{$1}>[\\w]+)"
+        } + '$'
+
+        @pattern = Regexp.new(uri_named_params_pattern)
       end
 
-      # def ==(uri)
-      #   puts uri
-      # end
+      def [](method)
+        @methods[method]
+      end
 
+      def add_method(method, block)
+        methods[method] = block
+      end
+
+      def to_params(uri)
+        uri_named_params = uri.match(@pattern)
+        Hash[uri_named_params.names.zip(uri_named_params.captures)].inject({}) { |memo, (k, v)| memo[k.to_sym] = v; memo }
+      end
     end
 
     class Routes
 
       def initialize
-        @routes = {}
+        @routes = []
       end
 
-      def []=(uri, methods)
-        @routes[Route.new(uri)] = methods
+      def <<(route)
+        @routes << route
       end
 
       def [](uri)
-        route = @routes.find do |route, methods|
+        route = @routes.find do |route|
           route.uri == uri ? true : route.pattern =~ uri
         end
 
-        route[1] unless route == nil
+        route unless route.nil?
       end
 
-      def has_key?(uri)
-        @routes.any? do |route, methods|
-          route.pattern =~ uri
+      def has_route?(uri)
+        @routes.any? do |route|
+          uri.match(route.pattern)
         end
       end
 
@@ -66,15 +67,16 @@ module Ramly
       @routes = Routes.new
 
       if is_valid_route?(root.resources, method, uri)
-        if @routes.has_key? uri
-          @routes[uri][method] = block
+        if @routes.has_route? uri
+          route = @routes[uri]
+          route.add_method(method, block)
         else
-          @routes[uri] = {}
-          puts uri
-          @routes[uri][method] = block
+          route = Route.new(uri)
+          route.add_method(method, block)
+          @routes << route
         end
       else
-        throw 'Unexpected URI ' + method + ' ' + uri
+        raise(ImplementedUnknownResource, "Implemented unknown resource for #{method}: #{uri}")
       end
     end
 

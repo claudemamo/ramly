@@ -1,6 +1,7 @@
 require 'rspec'
 require 'rack/test'
 require './lib/ramly/ramly'
+require './lib/ramly/exceptions'
 
 module Helpers
   include Rack::Test::Methods
