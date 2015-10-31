@@ -3,5 +3,6 @@ rvm:
   - 2.2.2
 before_script:
    - git clone https://github.com/claudemamo/raml_ruby.git /tmp/raml_ruby
+   - bundle install
    - ( cd /tmp/raml_ruby && bundle install && gem build raml_ruby.gemspec && gem install --local raml_ruby-0.1.1.gem  )
 script: rspec spec
